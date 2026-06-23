@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/x-icon" href="https://imgs.search.brave.com/77_ieZvZss6YqickW-XOXoVgh7yiUWeDWN1cGPL7tnk/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9jZG4t/aWNvbnMtcG5nLmZs/YXRpY29uLmNvbS8x/MjgvNDcw" />
+  <title>Bienvenido alumno</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="content-card">
+    <header class="page-header">
+      <h1>Bienvenido alumno</h1>
+    </header>
+
+    <div class="menu" role="tablist" aria-label="Menú dinámico">
+      <button id="tab-lab" type="button" class="active">Ver laboratorio</button>
+      <button id="tab-reservas" type="button">Mis reservas</button>
+      <button id="tab-cerrar" type="button">Cerrar sesión</button>
+    </div>
+
+    <div class="menu-divider"></div>
+
+    <section id="content-lab" class="menu-content">
+      <p>Explora los equipos disponibles y reserva una computadora haciendo clic en una de ellas.</p>
+       <br>
+      <div class="cinema" aria-label="Mapa del laboratorio" style="display:flex; align-items:center; justify-content:space-between; gap:1rem;">
+        <div class="screen-side" style="display:flex; align-items:center; justify-content:center; width:3rem; min-height:10rem; background:#222; color:#fff; border-radius:0.5rem; padding:0.5rem; writing-mode:vertical-rl; transform:rotate(180deg); font-weight:700;">
+          Pizarra
+        </div>
+
+        <div class="seats" id="seats-container" role="grid" aria-label="Puestos de cómputo" style="flex:1;">
+          <!-- Los asientos se renderizan aquí dinámicamente -->
+        </div>
+
+        <div class="screen-side" style="display:flex; align-items:center; justify-content:center; width:3rem; min-height:10rem; background:#222; color:#fff; border-radius:0.5rem; padding:0.5rem; writing-mode:vertical-rl; transform:rotate(180deg); font-weight:700;">
+          Entrada
+        </div>
+      </div>
+      <br>
+      <div class="legend" aria-label="Leyenda de estado de las computadoras" style="text-align:center; margin: 1rem 0;">
+        🟢Disponible&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;🟠Ocupado&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;🔴Fuera de servicio
+      </div>
+
+      <!-- Modal / formulario de reserva -->
+      <div id="reserve-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="reserve-title">
+        <div class="modal-content">
+          <h3 id="reserve-title">Reservar <span id="reserve-pc"></span></h3>
+          <form id="reserve-form">
+            <label>Fecha: <input type="date" id="res-fecha" required></label>
+            <label>Hora inicio: <input type="time" id="res-inicio" required></label>
+            <label>Hora fin: <input type="time" id="res-fin" required></label>
+            <div class="modal-actions">
+              <button type="submit" id="confirm-reserve">Confirmar reserva</button>
+              <button type="button" id="cancel-reserve">Cancelar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section id="content-reservas" class="menu-content hidden">
+      <p>Aquí puedes revisar tus reservas actuales y ver el estado de tus solicitudes de uso del laboratorio.</p>
+      <div id="reservations-table-container">
+        <p>No tienes reservas registradas.</p>
+      </div>
+    </section>
+
+    <section id="content-cerrar" class="menu-content hidden">
+      <h2>Cerrar sesión</h2>
+      <p>Haz clic en el enlace para regresar a la página de inicio de sesión.</p>
+      <p><a class="logout-link" href="index.html">Salir e iniciar sesión con otra cuenta</a></p>
+    </section>
+  </div>
+
+  <script>
+    const buttons = {
+      lab: document.getElementById('tab-lab'),
+      reservas: document.getElementById('tab-reservas'),
+      cerrar: document.getElementById('tab-cerrar')
+    };
+
+    const sections = {
+      lab: document.getElementById('content-lab'),
+      reservas: document.getElementById('content-reservas'),
+      cerrar: document.getElementById('content-cerrar')
+    };
+
+    function setActiveTab(selected) {
+      Object.keys(buttons).forEach(key => {
+        buttons[key].classList.toggle('active', key === selected);
+      });
+
+      Object.keys(sections).forEach(key => {
+        sections[key].classList.toggle('hidden', key !== selected);
+      });
+    }
+
+    buttons.lab.addEventListener('click', () => { setActiveTab('lab'); loadComputadoras(); });
+    buttons.reservas.addEventListener('click', async () => { setActiveTab('reservas'); await loadReservas(); });
+    buttons.cerrar.addEventListener('click', () => setActiveTab('cerrar'));
+
+    // ------------------------
+    // Firebase + reserva logic
+    // ------------------------
+
+    // NOTE: Reemplaza con tu configuración de Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyBn5ZMJZViZT9eJXIyPqj0DkMbBXZQmTvw",
+      authDomain: "mi-primera-app-d59b5.firebaseapp.com",
+      projectId: "mi-primera-app-d59b5",
+      storageBucket: "mi-primera-app-d59b5.firebasestorage.app",
+      messagingSenderId: "660187799596",
+      appId: "1:660187799596:web:04db2cf11082de28303189",
+      measurementId: "G-HPEV7B1K0S"
+    };
+
+    // Cargamos el SDK modular desde CDN usando imports dinámicos (compatibilidad con navegadores modernos)
+    let app, db;
+    async function initFirebase() {
+      const [{ initializeApp }, { getFirestore, collection, getDocs, doc, updateDoc, addDoc, onSnapshot }] = await Promise.all([
+        import('https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js'),
+        import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js')
+      ]);
+
+      app = initializeApp(firebaseConfig);
+      db = getFirestore(app);
+      // Usamos onSnapshot para reflejar cambios en tiempo real si existen
+    }
+
+    // Mapa para relacionar número -> documento ID en Firestore
+    const computadorasMap = new Map();
+    let selectedPC = null;
+
+    // Renderiza los seis puestos (PC01..PC06) usando datos de Firestore cuando estén disponibles
+    async function loadComputadoras() {
+      if (!db) await initFirebase();
+
+      const pcs = ['PC01','PC02','PC03','PC04','PC05','PC06'];
+      // Obtener colección 'computadoras' y mapear doc IDs por numero
+      const { getDocs, collection } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+      const snapshot = await getDocs(collection(db, 'computadoras'));
+      computadorasMap.clear();
+      snapshot.forEach(d => {
+        const data = d.data();
+        if (data && data.numero) computadorasMap.set(data.numero, { id: d.id, estado: data.estado });
+      });
+
+      const container = document.getElementById('seats-container');
+      container.innerHTML = '';
+
+      pcs.forEach(numero => {
+        const info = computadorasMap.get(numero) || { id: null, estado: 'disponible' };
+        const btn = document.createElement('button');
+        const isFueraServicio = info.estado === 'fuera_servicio' || info.estado === 'fuera-servicio';
+        const stateClass = isFueraServicio ? 'fuera-servicio' : (info.estado === 'ocupada' ? 'ocupada' : 'disponible');
+        const stateTitle = isFueraServicio ? 'Fuera de servicio' : (info.estado === 'ocupada' ? 'Ocupada' : 'Disponible');
+
+        btn.className = 'seat-btn ' + stateClass;
+        btn.setAttribute('data-numero', numero);
+        btn.setAttribute('role','gridcell');
+        btn.innerText = numero;
+        btn.title = stateTitle;
+
+        btn.addEventListener('click', () => onSeatClick(numero, info));
+        container.appendChild(btn);
+      });
+    }
+
+    function clearSelection() {
+      selectedPC = null;
+      document.querySelectorAll('.seat-btn.selected').forEach(el => el.classList.remove('selected'));
+    }
+
+    function onSeatClick(numero, info) {
+      if (info.estado === 'ocupada') {
+        alert('Esta computadora está ocupada.');
+        return;
+      }
+      if (info.estado === 'fuera_servicio' || info.estado === 'fuera-servicio') {
+        alert('Esta computadora está fuera de servicio y no puede reservarse.');
+        return;
+      }
+      clearSelection();
+      const btn = document.querySelector(`.seat-btn[data-numero="${numero}"]`);
+      if (btn) btn.classList.add('selected');
+      selectedPC = { numero, docId: info.id };
+      openReserveModal(numero);
+    }
+
+    const reservationsContainer = document.getElementById('reservations-table-container');
+    async function loadReservas() {
+      if (!db) await initFirebase();
+      if (!usuarioCorreo) {
+        reservationsContainer.innerHTML = '<p>No tienes reservas registradas.</p>';
+        return;
+      }
+
+      const { getDocs, collection, query, where } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+      const reservasQuery = query(
+        collection(db, 'reservas'),
+        where('correo', '==', usuarioCorreo)
+      );
+      const snapshot = await getDocs(reservasQuery);
+
+      if (snapshot.empty) {
+        reservationsContainer.innerHTML = '<p>No tienes reservas registradas.</p>';
+        return;
+      }
+
+      const rows = [];
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        rows.push(data);
+      });
+
+      reservationsContainer.innerHTML = `
+        <table class="reservations-table">
+          <thead>
+            <tr>
+              <th>Computadora</th>
+              <th>Fecha</th>
+              <th>Hora de inicio</th>
+              <th>Hora de fin</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(res => `
+              <tr>
+                <td>${res.computadora || ''}</td>
+                <td>${res.fecha || ''}</td>
+                <td>${res.inicio || ''}</td>
+                <td>${res.fin || ''}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    // Modal handlers
+    const modal = document.getElementById('reserve-modal');
+    const reservePcSpan = document.getElementById('reserve-pc');
+    const form = document.getElementById('reserve-form');
+    const cancelBtn = document.getElementById('cancel-reserve');
+
+    function openReserveModal(numero) {
+      reservePcSpan.textContent = numero;
+      modal.classList.remove('hidden');
+    }
+
+    function closeReserveModal() {
+      modal.classList.add('hidden');
+      form.reset();
+      clearSelection();
+    }
+
+    cancelBtn.addEventListener('click', closeReserveModal);
+
+    // Obtener nombre y correo desde query params (pasados desde index.html)
+    const params = new URLSearchParams(window.location.search);
+    const usuarioNombre = params.get('nombre') || '';
+    const usuarioCorreo = params.get('correo') || '';
+
+    // Manejo del envío de la reserva
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!selectedPC) return alert('Selecciona una computadora disponible.');
+      const fecha = document.getElementById('res-fecha').value;
+      const inicio = document.getElementById('res-inicio').value;
+      const fin = document.getElementById('res-fin').value;
+      if (!fecha || !inicio || !fin) return alert('Completa fecha y horas.');
+
+      try {
+        const { addDoc, collection, updateDoc, doc } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+        // Guardar reserva
+        await addDoc(collection(db, 'reservas'), {
+          computadora: selectedPC.numero,
+          fecha,
+          inicio,
+          fin,
+          nombre: usuarioNombre,
+          correo: usuarioCorreo,
+          createdAt: new Date().toISOString()
+        });
+
+        // Actualizar estado de la computadora a 'ocupada'
+        if (selectedPC.docId) {
+          const pcRef = doc(db, 'computadoras', selectedPC.docId);
+          await updateDoc(pcRef, { estado: 'ocupada' });
+        } else {
+          // Si no existe doc, crear/reemplazar usando addDoc con numero
+          const { addDoc, collection } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+          await addDoc(collection(db, 'computadoras'), { numero: selectedPC.numero, estado: 'ocupada' });
+        }
+
+        alert('Reserva confirmada.');
+        closeReserveModal();
+        // Recargar vista para mostrar cambios
+        await loadComputadoras();
+      } catch (err) {
+        console.error(err);
+        alert('Error al guardar la reserva. Revisa la consola.');
+      }
+    });
+
+    // Inicializar carga al abrir la página
+    (async () => {
+      try {
+        await initFirebase();
+        await loadComputadoras();
+      } catch (err) {
+        console.warn('Firebase no inicializado: revisa firebaseConfig en el script.', err);
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/x-icon" href="https://imgs.search.brave.com/77_ieZvZss6YqickW-XOXoVgh7yiUWeDWN1cGPL7tnk/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9jZG4t/aWNvbnMtcG5nLmZs/YXRpY29uLmNvbS8x/MjgvNDcw" />
+  <title>Bienvenido administrador</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="content-card">
+    <header class="page-header">
+      <h1>Bienvenido administrador</h1>
+    </header>
+
+    <div class="menu" role="tablist" aria-label="Menú dinámico administrador" style="justify-content: center; flex-wrap: wrap;">
+      <button id="tab-usuarios" type="button" class="active">Gestionar usuarios</button>
+      <button id="tab-computadoras" type="button">Gestionar computadoras</button>
+      <button id="tab-reservas-admin" type="button">Ver reservas</button>
+      <button id="tab-cerrar-admin" type="button" title="Cerrar sesión"><img src="salida.png" height="40px"></button>
+    </div>
+
+    <div class="menu-divider"></div>
+
+    <section id="content-usuarios" class="menu-content">
+      <p>Aquí puedes ver, editar y registrar usuarios registrados en el sistema.</p>
+      
+      <!-- Formulario de registro de usuarios -->
+      <div id="register-form-container" style="background: rgba(93, 134, 255, 0.08); padding: 20px; border-radius: 12px; margin-bottom: 30px; border: 1px solid rgba(93, 134, 255, 0.2);">
+        <h3 style="margin-top: 0; color: #a8d5ff;">Registrar nuevo usuario</h3>
+        <form id="register-user-form" style="display: flex; flex-direction: column; gap: 16px;">
+          <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+              <div style="flex: 1; min-width: 200px; margin-bottom: 8px;">
+              <label for="reg-nombre" style="display: block; margin-bottom: 6px; color: #cfd8fc; font-size: 0.95rem;">Nombre</label>
+              <input type="text" id="reg-nombre" placeholder="Ingresa el nombre" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255, 255, 255, 0.06); color: #fff; font-size: 0.9rem;" />
+            </div>
+              <div style="flex: 1; min-width: 200px; margin-bottom: 8px;">
+              <label for="reg-correo" style="display: block; margin-bottom: 6px; color: #cfd8fc; font-size: 0.95rem;">Correo</label>
+              <input type="email" id="reg-correo" placeholder="Ingresa el correo" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255, 255, 255, 0.06); color: #fff; font-size: 0.9rem;" />
+            </div>
+          </div>
+          <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+              <div style="flex: 1; min-width: 200px; margin-bottom: 8px;">
+              <label for="reg-password" style="display: block; margin-bottom: 6px; color: #cfd8fc; font-size: 0.95rem;">Contraseña</label>
+              <input type="password" id="reg-password" placeholder="Ingresa la contraseña" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255, 255, 255, 0.06); color: #fff; font-size: 0.9rem;" />
+            </div>
+            <div style="flex: 1; min-width: 150px;">
+              <label for="reg-rol" style="display: block; margin-bottom: 6px; color: #cfd8fc; font-size: 0.95rem;">Rol</label>
+              <select id="reg-rol" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255, 255, 255, 0.06); color: #ffff; font-size: 0.9rem;">
+                <option value="alumno">Alumno</option>
+                <option value="admin">Administrador</option>
+              </select>
+            </div>
+          </div>
+          <button type="submit" style="align-self: flex-start; padding: 10px 24px; border-radius: 10px; border: none; background: linear-gradient(135deg, #5d86ff, #8d5cff); color: #fff; font-weight: 700; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease;">Registrar usuario</button>
+          <div id="register-message" style="margin-top: 12px; padding: 10px; border-radius: 8px; display: none;"></div>
+        </form>
+      </div>
+
+      <div id="users-table-container">
+        <p>No hay usuarios registrados.</p>
+      </div>
+    </section>
+
+    <section id="content-computadoras" class="menu-content hidden">
+      <p>Aquí puedes ver, editar el estado y gestionar las computadoras del laboratorio.</p>
+      <div id="computers-table-container">
+        <p>No hay computadoras registradas.</p>
+      </div>
+    </section>
+
+    <section id="content-reservas-admin" class="menu-content hidden">
+      <p>Aquí puedes ver todas las reservas realizadas en el sistema.</p>
+      <div id="admin-reservations-container">
+        <p>No hay reservas registradas.</p>
+      </div>
+    </section>
+
+    <section id="content-cerrar-admin" class="menu-content hidden">
+      <h2>Cerrar sesión</h2>
+      <p>Haz clic en el enlace para regresar a la página de inicio de sesión.</p>
+      <p><a class="logout-link" href="index.html">Salir e iniciar sesión con otra cuenta</a></p>
+    </section>
+  </div>
+
+  <script>
+    const buttons = {
+      usuarios: document.getElementById('tab-usuarios'),
+      computadoras: document.getElementById('tab-computadoras'),
+      reservasAdmin: document.getElementById('tab-reservas-admin'),
+      cerrarAdmin: document.getElementById('tab-cerrar-admin')
+    };
+
+    const sections = {
+      usuarios: document.getElementById('content-usuarios'),
+      computadoras: document.getElementById('content-computadoras'),
+      reservasAdmin: document.getElementById('content-reservas-admin'),
+      cerrarAdmin: document.getElementById('content-cerrar-admin')
+    };
+
+    function setActiveTab(selected) {
+      Object.keys(buttons).forEach(key => {
+        buttons[key].classList.toggle('active', key === selected);
+      });
+
+      Object.keys(sections).forEach(key => {
+        sections[key].classList.toggle('hidden', key !== selected);
+      });
+    }
+
+    buttons.usuarios.addEventListener('click', async () => { setActiveTab('usuarios'); await loadUsuarios(); });
+    buttons.computadoras.addEventListener('click', async () => { setActiveTab('computadoras'); await loadComputadoras(); });
+    buttons.reservasAdmin.addEventListener('click', async () => { setActiveTab('reservasAdmin'); await loadAllReservas(); });
+    buttons.cerrarAdmin.addEventListener('click', () => setActiveTab('cerrarAdmin'));
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBn5ZMJZViZT9eJXIyPqj0DkMbBXZQmTvw",
+      authDomain: "mi-primera-app-d59b5.firebaseapp.com",
+      projectId: "mi-primera-app-d59b5",
+      storageBucket: "mi-primera-app-d59b5.firebasestorage.app",
+      messagingSenderId: "660187799596",
+      appId: "1:660187799596:web:04db2cf11082de28303189",
+      measurementId: "G-HPEV7B1K0S"
+    };
+
+    let app, db;
+    async function initFirebase() {
+      const [{ initializeApp }, { getFirestore }] = await Promise.all([
+        import('https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js'),
+        import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js')
+      ]);
+
+      app = initializeApp(firebaseConfig);
+      db = getFirestore(app);
+    }
+
+    // Obtener nombre y correo desde query params
+    const params = new URLSearchParams(window.location.search);
+    const adminNombre = params.get('nombre') || '';
+    const adminCorreo = params.get('correo') || '';
+
+    const usersTableContainer = document.getElementById('users-table-container');
+    async function loadUsuarios() {
+      if (!db) await initFirebase();
+
+      const { getDocs, collection } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+      const snapshot = await getDocs(collection(db, 'usuarios'));
+
+      if (snapshot.empty) {
+        usersTableContainer.innerHTML = '<p>No hay usuarios registrados.</p>';
+        return;
+      }
+
+      const rows = [];
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        rows.push(data);
+      });
+
+      usersTableContainer.innerHTML = `
+        <table class="reservations-table">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Correo</th>
+              <th>Rol</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(user => `
+              <tr>
+                <td>${user.nombre || ''}</td>
+                <td>${user.correo || ''}</td>
+                <td>${user.rol || 'usuario'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    // Manejador del formulario de registro de usuarios
+    const registerForm = document.getElementById('register-user-form');
+    const registerMessage = document.getElementById('register-message');
+
+    registerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nombre = document.getElementById('reg-nombre').value.trim();
+      const correo = document.getElementById('reg-correo').value.toLowerCase().trim();
+      const password = document.getElementById('reg-password').value.trim();
+      const rol = document.getElementById('reg-rol').value;
+
+      // Validar campos
+      if (!nombre || !correo || !password || !rol) {
+        showMessage('Por favor completa todos los campos.', 'error');
+        return;
+      }
+
+      try {
+        if (!db) await initFirebase();
+
+        const { getDocs, collection, query, where, addDoc } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+
+        // Verificar que el correo no exista
+        const usuariosQuery = query(
+          collection(db, 'usuarios'),
+          where('correo', '==', correo)
+        );
+        const snapshot = await getDocs(usuariosQuery);
+
+        if (!snapshot.empty) {
+          showMessage('El correo ya está registrado en el sistema.', 'error');
+          return;
+        }
+
+        // Guardar nuevo usuario en Firestore
+        await addDoc(collection(db, 'usuarios'), {
+          nombre,
+          correo,
+          password,
+          rol
+        });
+
+        showMessage('Usuario registrado exitosamente.', 'success');
+        registerForm.reset();
+        await loadUsuarios();
+      } catch (err) {
+        console.error('Error registrando usuario:', err);
+        showMessage('Error al registrar el usuario. Intenta nuevamente.', 'error');
+      }
+    });
+
+    function showMessage(message, type) {
+      registerMessage.textContent = message;
+      registerMessage.style.display = 'block';
+      registerMessage.style.backgroundColor = type === 'success' ? 'rgba(46, 204, 113, 0.2)' : 'rgba(231, 76, 60, 0.2)';
+      registerMessage.style.borderLeft = `4px solid ${type === 'success' ? '#2ecc71' : '#e74c3c'}`;
+      registerMessage.style.color = type === 'success' ? '#2ecc71' : '#e74c3c';
+      
+      if (type === 'success') {
+        setTimeout(() => {
+          registerMessage.style.display = 'none';
+        }, 3000);
+      }
+    }
+
+    const computersTableContainer = document.getElementById('computers-table-container');
+    async function loadComputadoras() {
+      if (!db) await initFirebase();
+
+      const { getDocs, collection } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+      const snapshot = await getDocs(collection(db, 'computadoras'));
+
+      if (snapshot.empty) {
+        computersTableContainer.innerHTML = '<p>No hay computadoras registradas.</p>';
+        return;
+      }
+
+      const rows = [];
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        rows.push({ id: doc.id, ...data });
+      });
+
+      const getStateColor = (estado) => {
+        switch(estado) {
+          case 'disponible': return '#2ecc71';
+          case 'ocupada': return '#f39c12';
+          case 'fuera_servicio': return '#e74c3c';
+          default: return '#95a5a6';
+        }
+      };
+
+      const getStateLabel = (estado) => {
+        switch(estado) {
+          case 'disponible': return 'Disponible';
+          case 'ocupada': return 'Ocupada';
+          case 'fuera_servicio': return 'Fuera de servicio';
+          default: return 'Desconocido';
+        }
+      };
+
+      computersTableContainer.innerHTML = `
+        <table class="reservations-table">
+          <thead>
+            <tr>
+              <th>Número de computadora</th>
+              <th>Estado</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(pc => `
+              <tr>
+                <td>${pc.numero || ''}</td>
+                <td>
+                  <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background-color: ${getStateColor(pc.estado)}; margin-right: 8px;"></span>
+                  ${getStateLabel(pc.estado)}
+                </td>
+                <td>
+                  <select class="estado-select" data-pc-id="${pc.id}" data-pc-numero="${pc.numero}" style="padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255, 255, 255, 0.08); color: #fff; font-size: 0.9rem; cursor: pointer;">
+                    <option value="disponible" ${pc.estado === 'disponible' ? 'selected' : ''}>Disponible</option>
+                    <option value="ocupada" ${pc.estado === 'ocupada' ? 'selected' : ''}>Ocupada</option>
+                    <option value="fuera_servicio" ${pc.estado === 'fuera_servicio' ? 'selected' : ''}>Fuera de servicio</option>
+                  </select>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+
+      // Agregar event listeners a los selects
+      document.querySelectorAll('.estado-select').forEach(select => {
+        select.addEventListener('change', async (e) => {
+          const newEstado = e.target.value;
+          const docId = select.getAttribute('data-pc-id');
+          const numero = select.getAttribute('data-pc-numero');
+
+          try {
+            const { updateDoc, doc } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+            const pcRef = doc(db, 'computadoras', docId);
+            await updateDoc(pcRef, { estado: newEstado });
+            alert(`Estado de ${numero} actualizado a ${getStateLabel(newEstado)}`);
+            await loadComputadoras();
+          } catch (err) {
+            console.error('Error actualizando estado:', err);
+            alert('Error al actualizar el estado.');
+          }
+        });
+      });
+    }
+
+    const adminReservationsContainer = document.getElementById('admin-reservations-container');
+    async function loadAllReservas() {
+      if (!db) await initFirebase();
+
+      const { getDocs, collection } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+      const snapshot = await getDocs(collection(db, 'reservas'));
+
+      if (snapshot.empty) {
+        adminReservationsContainer.innerHTML = '<p>No hay reservas registradas.</p>';
+        return;
+      }
+
+      const rows = [];
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        rows.push(data);
+      });
+
+      adminReservationsContainer.innerHTML = `
+        <table class="reservations-table">
+          <thead>
+            <tr>
+              <th>Usuario</th>
+              <th>Correo</th>
+              <th>Computadora</th>
+              <th>Fecha</th>
+              <th>Hora de inicio</th>
+              <th>Hora de fin</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(res => `
+              <tr>
+                <td>${res.nombre || ''}</td>
+                <td>${res.correo || ''}</td>
+                <td>${res.computadora || ''}</td>
+                <td>${res.fecha || ''}</td>
+                <td>${res.inicio || ''}</td>
+                <td>${res.fin || ''}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    // Inicializar Firebase
+    (async () => {
+      try {
+        await initFirebase();
+      } catch (err) {
+        console.warn('Firebase no inicializado:', err);
+      }
+    })();
+  </script>
+</body>
+</html>
