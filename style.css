@@ -13,7 +13,7 @@ body::before {
   content: "";
   position: fixed;
   inset: 0;
-  background: url("compus.jpeg") center/cover no-repeat;
+  background: url("compus.jpeg");
   filter: blur(4px) contrast(1.1) saturate(1.3) hue-rotate(190deg);
   transform: scale(1.15);
   opacity: 0.7;
