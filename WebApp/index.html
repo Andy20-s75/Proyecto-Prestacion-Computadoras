@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <link rel="icon" type="image/x-icon" href="https://imgs.search.brave.com/77_ieZvZss6YqickW-XOXoVgh7yiUWeDWN1cGPL7tnk/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9jZG4t/aWNvbnMtcG5nLmZs/YXRpY29uLmNvbS8x/MjgvNDcwMy80NzAz/NzkzLnBuZw">
+  <title>Iniciar sesión</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="page-header">
+    <h2>Prestación de computadoras</h2>
+  </header>
+  <div class="login-card">
+    <h1>Iniciar sesión</h1>
+    <form id="login-form">
+      <label for="correo">Correo</label>
+      <input id="correo" name="correo" type="email" placeholder="Ingresa tu correo" required />
+      <label for="password">Contraseña</label>
+      <input id="password" name="password" type="password" placeholder="Ingresa tu contraseña" required />
+      <button type="submit">Iniciar sesión</button>
+    </form>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBn5ZMJZViZT9eJXIyPqj0DkMbBXZQmTvw",
+      authDomain: "mi-primera-app-d59b5.firebaseapp.com",
+      projectId: "mi-primera-app-d59b5",
+      storageBucket: "mi-primera-app-d59b5.firebasestorage.app",
+      messagingSenderId: "660187799596",
+      appId: "1:660187799596:web:04db2cf11082de28303189",
+      measurementId: "G-HPEV7B1K0S"
+    };
+
+    let app, db;
+    async function initFirebase() {
+      const [{ initializeApp }, { getFirestore }] = await Promise.all([
+        import('https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js'),
+        import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js')
+      ]);
+
+      app = initializeApp(firebaseConfig);
+      db = getFirestore(app);
+    }
+
+    const loginForm = document.getElementById('login-form');
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const correoIngresado = document.getElementById('correo').value.toLowerCase().trim();
+      const passwordIngresado = document.getElementById('password').value.trim();
+
+      try {
+        if (!db) await initFirebase();
+
+        const { getDocs, collection, query, where } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+        const usuariosQuery = query(
+          collection(db, 'usuarios'),
+          where('correo', '==', correoIngresado)
+        );
+        const snapshot = await getDocs(usuariosQuery);
+
+        if (snapshot.empty) {
+          alert('Correo o contraseña incorrectos.');
+          return;
+        }
+
+        const usuarioData = snapshot.docs[0].data();
+        console.log(usuarioData);
+
+        const passwordGuardada = (usuarioData.password || usuarioData.contrasena || usuarioData.contraseña || '').toString().trim();
+
+        console.log('Contraseña ingresada:', passwordIngresado);
+        console.log('Contraseña guardada:', passwordGuardada);
+        console.log('¿Son iguales?', passwordGuardada === passwordIngresado);
+
+        if (passwordGuardada !== passwordIngresado) {
+          alert('Correo o contraseña incorrectos.');
+          return;
+        }
+
+        const nombre = usuarioData.nombre || '';
+        const correo = usuarioData.correo || correoIngresado;
+        const rol = usuarioData.rol || 'alumno';
+
+        if (rol === 'admin') {
+          window.location.href = `admin.html?nombre=${encodeURIComponent(nombre)}&correo=${encodeURIComponent(correo)}`;
+        } else {
+          window.location.href = `panel.html?nombre=${encodeURIComponent(nombre)}&correo=${encodeURIComponent(correo)}`;
+        }
+      } catch (err) {
+        console.error('Error en autenticación:', err);
+        alert('Error al procesar la solicitud. Intenta nuevamente.');
+      }
+    });
+
+    // Inicializar Firebase al cargar la página
+    (async () => {
+      try {
+        await initFirebase();
+      } catch (err) {
+        console.warn('Firebase no inicializado:', err);
+      }
+    })();
+  </script>
+</body>
+</html>
